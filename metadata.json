@@ -1,0 +1,7 @@
+{
+  "name": "TEJA PICKLES & HOMEFOODS",
+  "description": "Premium South Indian homemade pickles, sweets, and snacks with traditional Telugu flavors and WhatsApp ordering support.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
