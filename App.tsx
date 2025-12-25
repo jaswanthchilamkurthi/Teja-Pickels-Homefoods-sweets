@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { HashRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
   ShoppingBag, 
   Menu, 
@@ -268,7 +268,6 @@ const CartModal = ({
   if (!isOpen) return null;
 
   const handleCheckout = () => {
-    // UPDATED TEMPLATE PER USER REQUEST
     const message = `*NEW ORDER - TEJA PICKLES & HOME FOODS*\n\n` +
       items.map(item => `ITEM NAME: ${item.name} (${item.selectedWeight})\nQUANTITY: ${item.quantity}\n--------------------------`).join('\n') +
       `\n\n💰 *TOTAL PAYABLE: ₹${total}*` +
@@ -788,7 +787,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <HashRouter>
+    <BrowserRouter>
       <div className="flex flex-col min-h-screen bg-black">
         <Navbar cartCount={cart.reduce((s, i) => s + i.quantity, 0)} onOpenCart={() => setIsCartOpen(true)} />
         <main className="flex-grow">
@@ -810,7 +809,7 @@ const App: React.FC = () => {
           onRemove={removeFromCart}
         />
       </div>
-    </HashRouter>
+    </BrowserRouter>
   );
 };
 
