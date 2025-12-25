@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
@@ -30,20 +31,28 @@ const AIAssistant = () => {
     setLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-      const model = ai.getGenerativeModel({ 
-        model: "gemini-3-flash-preview",
-        systemInstruction: "You are an expert South Indian food connoisseur for 'Teja Pickles & Home Foods'. You help customers choose between Veg Pickles, Non-Veg Pickles, Sweets, and Hot Items. Be polite, use words like 'Namaste', and emphasize traditional Andhra flavors from Machilipatnam. Keep responses concise."
+      // Netlify specific: Exclusively using process.env.API_KEY
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: userMsg,
+        config: {
+          systemInstruction: "You are an expert South Indian food connoisseur for 'Teja Pickles & Home Foods'. You help customers choose between Veg Pickles, Non-Veg Pickles, Sweets, and Hot Items. Be polite, use words like 'Namaste', and emphasize traditional Andhra flavors from Machilipatnam. Keep responses concise.",
+        }
       });
 
-      const result = await model.generateContent(userMsg);
-      const response = result.response.text();
-      setMessages(prev => [...prev, { role: 'ai', text: response }]);
+      const responseText = response.text || "I'm sorry, I couldn't process that. Please try again!";
+      setMessages(prev => [...prev, { role: 'ai', text: responseText }]);
     } catch (error) {
+      console.error("AI Error:", error);
       setMessages(prev => [...prev, { role: 'ai', text: "I apologize, I'm having trouble connecting right now. Please try again or chat with us on WhatsApp!" }]);
     } finally {
       setLoading(false);
-      setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 100);
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTo(0, scrollRef.current.scrollHeight);
+        }
+      }, 100);
     }
   };
 
@@ -83,9 +92,9 @@ const AIAssistant = () => {
               type="text" 
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask for a recommendation..."
-              className="flex-grow bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 text-xs italic focus:outline-none focus:border-amber-500"
+              className="flex-grow bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 text-xs italic focus:outline-none focus:border-amber-500 text-white"
             />
             <button 
               onClick={handleSend}
