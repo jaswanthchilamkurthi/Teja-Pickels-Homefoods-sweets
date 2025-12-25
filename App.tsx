@@ -1,33 +1,111 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
-  ShoppingBag, 
-  Menu, 
-  X, 
-  Phone, 
-  Instagram, 
-  Truck, 
-  Star, 
-  CheckCircle2, 
-  MessageSquare,
-  ChevronRight,
-  Search, 
-  Plus, 
-  Minus, 
-  Trash2,
-  Flame,
-  Award,
-  MapPin,
-  User,
-  Map,
-  Youtube,
-  Wind,
-  Sparkles,
-  Gift
+  ShoppingBag, Menu, X, Phone, Instagram, Truck, Star, 
+  CheckCircle2, MessageSquare, ChevronRight, Search, 
+  Plus, Minus, Trash2, Flame, Award, MapPin, Youtube, 
+  Wind, Sparkles, Gift, Bot, Send, Loader2
 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 import { Product, CartItem, Category } from './types';
 import { PRODUCTS, TESTIMONIALS, PHONE_NUMBER, INSTAGRAM_HANDLE } from './constants';
+
+// --- AI Assistant Component ---
+
+const AIAssistant = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<{role: 'user' | 'ai', text: string}[]>([
+    { role: 'ai', text: 'Namaste! I am your Teja Pickles assistant. Looking for a specific flavor or a festive gift recommendation?' }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return;
+    
+    const userMsg = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setLoading(true);
+
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+      const model = ai.getGenerativeModel({ 
+        model: "gemini-3-flash-preview",
+        systemInstruction: "You are an expert South Indian food connoisseur for 'Teja Pickles & Home Foods'. You help customers choose between Veg Pickles, Non-Veg Pickles, Sweets, and Hot Items. Be polite, use words like 'Namaste', and emphasize traditional Andhra flavors from Machilipatnam. Keep responses concise."
+      });
+
+      const result = await model.generateContent(userMsg);
+      const response = result.response.text();
+      setMessages(prev => [...prev, { role: 'ai', text: response }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'ai', text: "I apologize, I'm having trouble connecting right now. Please try again or chat with us on WhatsApp!" }]);
+    } finally {
+      setLoading(false);
+      setTimeout(() => scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight), 100);
+    }
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-[70]">
+      {isOpen ? (
+        <div className="bg-zinc-950 border border-amber-900/30 w-80 md:w-96 h-[500px] rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-slide-in">
+          <div className="bg-gradient-to-r from-amber-600 to-red-700 p-4 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <Bot size={20} className="text-white" />
+              <span className="font-black italic text-sm uppercase tracking-tighter">Flavor Guide</span>
+            </div>
+            <button onClick={() => setIsOpen(false)}><X size={20} /></button>
+          </div>
+          
+          <div ref={scrollRef} className="flex-grow overflow-y-auto p-4 space-y-4 bg-black/40">
+            {messages.map((m, i) => (
+              <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] p-3 rounded-2xl text-sm italic ${
+                  m.role === 'user' ? 'bg-amber-600 text-black rounded-tr-none' : 'bg-zinc-900 text-gray-300 rounded-tl-none border border-white/5'
+                }`}>
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="bg-zinc-900 p-3 rounded-2xl rounded-tl-none border border-white/5">
+                  <Loader2 className="animate-spin text-amber-500" size={16} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="p-4 border-t border-white/5 flex gap-2">
+            <input 
+              type="text" 
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+              placeholder="Ask for a recommendation..."
+              className="flex-grow bg-zinc-900 border border-white/10 rounded-xl px-4 py-2 text-xs italic focus:outline-none focus:border-amber-500"
+            />
+            <button 
+              onClick={handleSend}
+              className="bg-amber-600 p-2 rounded-xl hover:bg-amber-500 transition-colors"
+            >
+              <Send size={18} className="text-black" />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button 
+          onClick={() => setIsOpen(true)}
+          className="w-14 h-14 bg-gradient-to-tr from-red-700 to-amber-600 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-all border border-amber-400/20"
+        >
+          <Bot size={28} className="text-white" />
+        </button>
+      )}
+    </div>
+  );
+};
 
 // --- Shared Components ---
 
@@ -37,7 +115,6 @@ const Navbar = ({ cartCount, onOpenCart }: { cartCount: number, onOpenCart: () =
 
   return (
     <div className="fixed top-0 left-0 right-0 z-[60]">
-      {/* Sankranthi Festive Marquee Banner */}
       <div className="bg-gradient-to-r from-red-800 via-amber-600 to-red-800 py-2 overflow-hidden border-b border-amber-400/30">
         <div className="whitespace-nowrap animate-marquee flex items-center gap-12">
           {[1, 2, 3].map((i) => (
@@ -360,7 +437,6 @@ const Home = ({ onAddToCart }: { onAddToCart: (p: Product, w: '250g' | '500g' | 
 
   return (
     <div className="bg-black text-white">
-      {/* Hero Section */}
       <section className="relative min-h-[95vh] flex items-center overflow-hidden">
         <div className="absolute inset-0">
           <img 
@@ -373,17 +449,17 @@ const Home = ({ onAddToCart }: { onAddToCart: (p: Product, w: '250g' | '500g' | 
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 mt-16">
           <div className="max-w-3xl">
-            <div className="flex items-center gap-2 mb-8 animate-fade-in-up">
+            <div className="flex items-center gap-2 mb-8">
               <Award className="text-amber-500" size={24} />
               <span className="text-amber-500 text-[10px] font-black uppercase tracking-[0.5em]">The Pride of Machilipatnam</span>
             </div>
-            <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[0.9] italic tracking-tighter animate-fade-in-up delay-100">
+            <h1 className="text-6xl md:text-8xl font-black mb-8 leading-[0.9] italic tracking-tighter">
               AUTHENTIC <span className="text-amber-500">ANDHRA</span><br />LEGACY.
             </h1>
-            <p className="text-xl text-amber-100/60 mb-12 max-w-xl font-medium italic animate-fade-in-up delay-200">
+            <p className="text-xl text-amber-100/60 mb-12 max-w-xl font-medium italic">
               Experience the bold flavors of Teja's world-famous pickles and home foods, crafted with heritage and handcrafted with love.
             </p>
-            <div className="flex flex-wrap gap-6 animate-fade-in-up delay-300">
+            <div className="flex flex-wrap gap-6">
               <Link to="/products" className="bg-amber-600 hover:bg-amber-500 text-black px-10 py-5 rounded-2xl font-black uppercase tracking-widest italic transition-all transform hover:scale-105">
                 Explore Menu
               </Link>
@@ -395,7 +471,6 @@ const Home = ({ onAddToCart }: { onAddToCart: (p: Product, w: '250g' | '500g' | 
         </div>
       </section>
 
-      {/* Sankranthi Sambaralu Feature Section */}
       <section className="relative bg-gradient-to-br from-[#1a0f0f] to-black py-32 overflow-hidden border-y border-amber-600/20">
         <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
           <Wind size={400} className="text-white" />
@@ -452,7 +527,7 @@ const Home = ({ onAddToCart }: { onAddToCart: (p: Product, w: '250g' | '500g' | 
                   <h3 className="text-white font-black italic text-4xl uppercase tracking-tighter">Harvest <br />Special</h3>
                 </div>
               </div>
-              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-amber-600 rounded-full flex items-center justify-center border-4 border-black shadow-xl animate-bounce">
+              <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-amber-600 rounded-full flex items-center justify-center border-4 border-black shadow-xl">
                 <span className="text-black font-black text-center text-xs leading-none uppercase">Sweets & <br /> Pickles</span>
               </div>
             </div>
@@ -460,7 +535,6 @@ const Home = ({ onAddToCart }: { onAddToCart: (p: Product, w: '250g' | '500g' | 
         </div>
       </section>
 
-      {/* Featured Section */}
       <section className="py-32 bg-zinc-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-end mb-20">
@@ -481,7 +555,6 @@ const Home = ({ onAddToCart }: { onAddToCart: (p: Product, w: '250g' | '500g' | 
         </div>
       </section>
 
-      {/* Why Choose Us */}
       <section className="py-32 bg-black border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -798,6 +871,7 @@ const App: React.FC = () => {
             <Route path="/testimonials" element={<TestimonialsPage />} />
             <Route path="/delivery" element={<Delivery />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/*" element={<Home onAddToCart={addToCart} />} />
           </Routes>
         </main>
         <Footer />
@@ -808,6 +882,7 @@ const App: React.FC = () => {
           onUpdateQty={updateCartQty}
           onRemove={removeFromCart}
         />
+        <AIAssistant />
       </div>
     </BrowserRouter>
   );
